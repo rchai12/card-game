@@ -39,6 +39,7 @@ class _CardGameState extends State<CardGame> {
   void initState() {
     super.initState();
     _initializeCards();
+    _shuffleCards();
   }
 
   void _initializeCards() {
@@ -104,9 +105,8 @@ class _CardGameState extends State<CardGame> {
       for (int i = 0; i < 13; i++) {
         var suit = suits[j];
         var rank = ranks[i];
-        var frontImageUrl = images[j * 1 + i];
+        var frontImageUrl = images[j * 13 + i];
         var backImageUrl = 'https://opengameart.org/sites/default/files/card%20back%20red.png';
-
         fullDeck.add(PlayingCard(suit: suit, rank: rank, frontImageUrl: frontImageUrl, backImageUrl: backImageUrl));
       }
     }
@@ -133,7 +133,8 @@ class _CardGameState extends State<CardGame> {
     setState(() {
       _cards[index].isFaceUp = true;
     });
-
+    print('First card rank: ${_firstSelected?.rank} First card suit: ${_firstSelected?.suit}');
+    print('Second card rank:  ${_cards[index].rank} Second card suit: ${_cards[index].suit}');
     if (_firstSelected == null) {
       _firstSelected = _cards[index];
     } else {
@@ -143,7 +144,7 @@ class _CardGameState extends State<CardGame> {
           _cards[index].isMatched = true;
         });
       } else {
-        Timer(Duration(seconds: 2), () {
+        Timer(Duration(seconds: 1), () {
           setState(() {
             _firstSelected!.isFaceUp = false;
             _cards[index].isFaceUp = false;
@@ -174,8 +175,8 @@ class _CardGameState extends State<CardGame> {
             child: Card(
               elevation: 4,
               child: _cards[index].isFaceUp || _cards[index].isMatched
-                  ? Image.network(_cards[index].frontImageUrl, fit: BoxFit.cover)
-                  : Image.network(_cards[index].backImageUrl, fit: BoxFit.cover),
+                  ? Image.network(_cards[index].frontImageUrl, fit: BoxFit.contain)
+                  : Image.network(_cards[index].backImageUrl, fit: BoxFit.contain),
             ),
           );
         },
@@ -185,10 +186,6 @@ class _CardGameState extends State<CardGame> {
               onPressed: () => setState(() {
                 _firstSelected = null;
                 _shuffleCards();
-                for (var card in _cards) {
-                  card.isFaceUp = false;
-                  card.isMatched = false;
-                }
               }),
               child: Icon(Icons.refresh),
             )
