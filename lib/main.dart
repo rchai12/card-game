@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
 
-class Card {
+class PlayingCard {
   final String suit;
   final String rank;
   final String frontImageUrl;
@@ -10,14 +10,20 @@ class Card {
   bool isFaceUp = false;
   bool isMatched = false;
 
-  Card({
+  PlayingCard({
     required this.suit,
     required this.rank,
     required this.frontImageUrl,
     required this.backImageUrl,
   });
 
-  bool matches(Card other) => suit == other.suit && rank == other.rank;
+  bool matches(PlayingCard other) => suit == other.suit && rank == other.rank;
+}
+
+void main() {
+  runApp(MaterialApp(
+    home: CardGame(),
+  ));
 }
 
 class CardGame extends StatefulWidget {
@@ -26,8 +32,8 @@ class CardGame extends StatefulWidget {
 }
 
 class _CardGameState extends State<CardGame> {
-  final List<Card> _cards = [];
-  Card? _firstSelected;
+  final List<PlayingCard> _cards = [];
+  PlayingCard? _firstSelected;
 
   @override
   void initState() {
@@ -93,7 +99,7 @@ class _CardGameState extends State<CardGame> {
       'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/King_of_spades_fr.svg/800px-King_of_spades_fr.svg.png'
     ];
 
-    List<Card> fullDeck = [];
+    List<PlayingCard> fullDeck = [];
     for (int j = 0; j < 4; j++) {
       for (int i = 0; i < 13; i++) {
         var suit = suits[j];
@@ -101,7 +107,7 @@ class _CardGameState extends State<CardGame> {
         var frontImageUrl = images[j * 1 + i];
         var backImageUrl = 'https://opengameart.org/sites/default/files/card%20back%20red.png';
 
-        fullDeck.add(Card(suit: suit, rank: rank, frontImageUrl: frontImageUrl, backImageUrl: backImageUrl));
+        fullDeck.add(PlayingCard(suit: suit, rank: rank, frontImageUrl: frontImageUrl, backImageUrl: backImageUrl));
       }
     }
 
@@ -110,7 +116,7 @@ class _CardGameState extends State<CardGame> {
 
     for (var card in selectedCards) {
       _cards.add(card);
-      _cards.add(Card(
+      _cards.add(PlayingCard(
         suit: card.suit,
         rank: card.rank,
         frontImageUrl: card.frontImageUrl,
@@ -119,7 +125,7 @@ class _CardGameState extends State<CardGame> {
     }
   }
 
-  void shuffleCards() => _cards.shuffle(Random());
+  void _shuffleCards() => _cards.shuffle(Random());
 
   void _selectCard(int index) {
     if (_cards[index].isFaceUp || _cards[index].isMatched) return;
@@ -147,4 +153,47 @@ class _CardGameState extends State<CardGame> {
       _firstSelected = null;
     }
   }
+
+  bool _isGameOver() => _cards.every((card) => card.isMatched);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Card Matching Game')),
+      body: GridView.builder(
+        padding: const EdgeInsets.all(8.0),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+        ),
+        itemCount: _cards.length,
+        itemBuilder: (context, index) {
+          return GestureDetector(
+            onTap: () => _selectCard(index),
+            child: Card(
+              elevation: 4,
+              child: _cards[index].isFaceUp || _cards[index].isMatched
+                  ? Image.network(_cards[index].frontImageUrl, fit: BoxFit.cover)
+                  : Image.network(_cards[index].backImageUrl, fit: BoxFit.cover),
+            ),
+          );
+        },
+      ),
+      floatingActionButton: _isGameOver()
+          ? FloatingActionButton(
+              onPressed: () => setState(() {
+                _firstSelected = null;
+                _shuffleCards();
+                for (var card in _cards) {
+                  card.isFaceUp = false;
+                  card.isMatched = false;
+                }
+              }),
+              child: Icon(Icons.refresh),
+            )
+          : null,
+    );
+  }
 }
+
