@@ -32,7 +32,8 @@ class CardGame extends StatefulWidget {
 }
 
 class _CardGameState extends State<CardGame> {
-  final List<PlayingCard> _cards = [];
+  List<PlayingCard> _cards = [];
+  List<PlayingCard> _fullDeck = [];
   PlayingCard? _firstSelected;
 
   @override
@@ -100,32 +101,33 @@ class _CardGameState extends State<CardGame> {
       'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/King_of_spades_fr.svg/800px-King_of_spades_fr.svg.png'
     ];
 
-    List<PlayingCard> fullDeck = [];
     for (int j = 0; j < 4; j++) {
       for (int i = 0; i < 13; i++) {
         var suit = suits[j];
         var rank = ranks[i];
         var frontImageUrl = images[j * 13 + i];
         var backImageUrl = 'https://opengameart.org/sites/default/files/card%20back%20red.png';
-        fullDeck.add(PlayingCard(suit: suit, rank: rank, frontImageUrl: frontImageUrl, backImageUrl: backImageUrl));
+        _fullDeck.add(PlayingCard(suit: suit, rank: rank, frontImageUrl: frontImageUrl, backImageUrl: backImageUrl));
       }
-    }
-
-    fullDeck.shuffle(Random());
-    var selectedCards = fullDeck.take(8).toList();
-
-    for (var card in selectedCards) {
-      _cards.add(card);
-      _cards.add(PlayingCard(
-        suit: card.suit,
-        rank: card.rank,
-        frontImageUrl: card.frontImageUrl,
-        backImageUrl: card.backImageUrl,
-      ));
     }
   }
 
-  void _shuffleCards() => _cards.shuffle(Random());
+  void _shuffleCards() {
+    _cards = [];
+    _fullDeck.shuffle(Random());
+    List<PlayingCard> selectedCards = _fullDeck.take(8).toList();
+    for (var card in selectedCards) {
+      for (int i = 0; i < 2; i++) {
+        _cards.add(PlayingCard(
+          suit: card.suit,
+          rank: card.rank,
+          frontImageUrl: card.frontImageUrl,
+          backImageUrl: card.backImageUrl,
+        ));
+      }
+    }
+    _cards.shuffle(Random());
+  }
 
   void _selectCard(int index) {
     if (_cards[index].isFaceUp || _cards[index].isMatched) return;
@@ -174,20 +176,36 @@ class _CardGameState extends State<CardGame> {
         itemCount: _cards.length,
         itemBuilder: (context, index) {
           return GestureDetector(
-            onTap: () => _selectCard(index),
-            child: Card(
-              elevation: 4,
-              child: _cards[index].isFaceUp || _cards[index].isMatched
-                  ? Image.network(_cards[index].frontImageUrl, fit: BoxFit.contain)
-                  : Image.network(_cards[index].backImageUrl, fit: BoxFit.contain),
-            ),
-          );
-        },
-      ),
+          onTap: () => _selectCard(index),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 500),
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              final flipAnimation = Tween(begin: 1.0, end: 0.0).animate(animation);
+              return AnimatedBuilder(
+                animation: flipAnimation,
+                child: child,
+                builder: (context, child) {
+                  final isBack = flipAnimation.value < 0.5;
+                  return Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.rotationY(isBack ? 3.14 * flipAnimation.value : 3.14 * (1 - flipAnimation.value)),
+                    child: child,
+                  );
+                },
+              );
+            },
+            child: _cards[index].isFaceUp || _cards[index].isMatched
+                ? Image.network(_cards[index].frontImageUrl, key: ValueKey(true), fit: BoxFit.contain)
+                : Image.network(_cards[index].backImageUrl, key: ValueKey(false), fit: BoxFit.contain),
+          ),
+        );
+      },
+    ),
       floatingActionButton: _isGameOver()
           ? FloatingActionButton(
               onPressed: () => setState(() {
                 _firstSelected = null;
+                _shuffleCards();
               }),
               child: Icon(Icons.refresh),
             )
