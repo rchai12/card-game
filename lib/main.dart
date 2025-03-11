@@ -143,6 +143,7 @@ class _CardGameState extends State<CardGame> {
           _firstSelected!.isMatched = true;
           _cards[index].isMatched = true;
           _firstSelected = null;
+          _checkWinCondition();
         });
       } else {
         Timer(Duration(seconds: 1), () {
@@ -160,56 +161,73 @@ class _CardGameState extends State<CardGame> {
     }
   }
 
-  bool _isGameOver() => _cards.every((card) => card.isMatched);
+  void _showWinDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Congratulations!'),
+          content: Text('You win! All cards matched.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                setState(() => _shuffleCards());
+              },
+              child: Text('Play Again?'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _checkWinCondition() {
+    if (_cards.every((card) => card.isMatched)) {
+      Future.delayed(Duration.zero, () => _showWinDialog(context));
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Card Matching Game')),
       body: GridView.builder(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(1.0),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 4,
-          crossAxisSpacing: 8,
+          crossAxisSpacing: 2,
           mainAxisSpacing: 8,
         ),
         itemCount: _cards.length,
         itemBuilder: (context, index) {
           return GestureDetector(
-          onTap: () => _selectCard(index),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 500),
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              final flipAnimation = Tween(begin: 1.0, end: 0.0).animate(animation);
-              return AnimatedBuilder(
-                animation: flipAnimation,
-                child: child,
-                builder: (context, child) {
-                  final isBack = flipAnimation.value < 0.5;
-                  return Transform(
-                    alignment: Alignment.center,
-                    transform: Matrix4.rotationY(isBack ? 3.14 * flipAnimation.value : 3.14 * (1 - flipAnimation.value)),
-                    child: child,
-                  );
-                },
-              );
-            },
-            child: _cards[index].isFaceUp || _cards[index].isMatched
-                ? Image.network(_cards[index].frontImageUrl, key: ValueKey(true), fit: BoxFit.contain)
-                : Image.network(_cards[index].backImageUrl, key: ValueKey(false), fit: BoxFit.contain),
-          ),
-        );
-      },
-    ),
-      floatingActionButton: _isGameOver()
-          ? FloatingActionButton(
-              onPressed: () => setState(() {
-                _firstSelected = null;
-                _shuffleCards();
-              }),
-              child: Icon(Icons.refresh),
-            )
-          : null,
+            onTap: () => _selectCard(index),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 500),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                final flipAnimation = Tween(begin: 1.0, end: 0.0).animate(animation);
+                return AnimatedBuilder(
+                  animation: flipAnimation,
+                  child: child,
+                  builder: (context, child) {
+                    final isBack = flipAnimation.value < 0.5;
+                    return Transform(
+                      alignment: Alignment.center,
+                      transform: Matrix4.rotationY(isBack ? 3.14 * flipAnimation.value : 3.14 * (1 - flipAnimation.value)),
+                      child: child,
+                    );
+                  },
+                );
+              },
+              child: _cards[index].isFaceUp || _cards[index].isMatched
+                  ? Image.network(_cards[index].frontImageUrl, key: ValueKey(true), fit: BoxFit.contain)
+                  : Image.network(_cards[index].backImageUrl, key: ValueKey(false), fit: BoxFit.contain),
+            ),
+          );
+        },
+      ),
     );
   }
 }
