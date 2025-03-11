@@ -133,25 +133,28 @@ class _CardGameState extends State<CardGame> {
     setState(() {
       _cards[index].isFaceUp = true;
     });
-    print('First card rank: ${_firstSelected?.rank} First card suit: ${_firstSelected?.suit}');
-    print('Second card rank:  ${_cards[index].rank} Second card suit: ${_cards[index].suit}');
     if (_firstSelected == null) {
       _firstSelected = _cards[index];
     } else {
-      if (_firstSelected!.matches(_cards[index])) {
+      if (_firstSelected != null && _firstSelected!.matches(_cards[index])) {
         setState(() {
           _firstSelected!.isMatched = true;
           _cards[index].isMatched = true;
+          _firstSelected = null;
         });
       } else {
         Timer(Duration(seconds: 1), () {
+          if (_firstSelected != null) {
+            setState(() {
+              _firstSelected!.isFaceUp = false;
+              _cards[index].isFaceUp = false;
+            });
+          }
           setState(() {
-            _firstSelected!.isFaceUp = false;
-            _cards[index].isFaceUp = false;
+            _firstSelected = null;
           });
         });
       }
-      _firstSelected = null;
     }
   }
 
@@ -185,7 +188,6 @@ class _CardGameState extends State<CardGame> {
           ? FloatingActionButton(
               onPressed: () => setState(() {
                 _firstSelected = null;
-                _shuffleCards();
               }),
               child: Icon(Icons.refresh),
             )
