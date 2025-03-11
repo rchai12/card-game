@@ -118,4 +118,33 @@ class _CardGameState extends State<CardGame> {
       ));
     }
   }
+
+  void shuffleCards() => _cards.shuffle(Random());
+
+  void _selectCard(int index) {
+    if (_cards[index].isFaceUp || _cards[index].isMatched) return;
+
+    setState(() {
+      _cards[index].isFaceUp = true;
+    });
+
+    if (_firstSelected == null) {
+      _firstSelected = _cards[index];
+    } else {
+      if (_firstSelected!.matches(_cards[index])) {
+        setState(() {
+          _firstSelected!.isMatched = true;
+          _cards[index].isMatched = true;
+        });
+      } else {
+        Timer(Duration(seconds: 2), () {
+          setState(() {
+            _firstSelected!.isFaceUp = false;
+            _cards[index].isFaceUp = false;
+          });
+        });
+      }
+      _firstSelected = null;
+    }
+  }
 }
